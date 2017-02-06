@@ -1,0 +1,6 @@
+- module: fs
+  metricsets: ["fs"]
+  enabled: true
+  period: 1s
+  hosts: ["localhost"]
+

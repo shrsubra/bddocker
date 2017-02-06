@@ -1,0 +1,9 @@
+- name: fs
+  type: group
+  description: >
+    fs
+  fields:
+    - name: example
+      type: keyword
+      description: >
+        Example field
