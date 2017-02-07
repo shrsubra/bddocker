@@ -3,6 +3,7 @@ package fs
 import (
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/metricbeat/mb"
+	"fmt"
 )
 
 // init registers the MetricSet with the central registry.
@@ -19,6 +20,7 @@ func init() {
 // multiple fetch calls.
 type MetricSet struct {
 	mb.BaseMetricSet
+	paths []string
 	counter int
 }
 
@@ -27,7 +29,12 @@ type MetricSet struct {
 // configuration entries if needed.
 func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 
-	config := struct{}{}
+	config := struct{
+		Paths []string `config:"paths"`
+	}{
+		Paths: []string{"/"},
+	}
+
 
 	if err := base.Module().UnpackConfig(&config); err != nil {
 		return nil, err
@@ -36,6 +43,7 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	return &MetricSet{
 		BaseMetricSet: base,
 		counter:       1,
+		paths: config.Paths,
 	}, nil
 }
 
@@ -46,6 +54,7 @@ func (m *MetricSet) Fetch() (common.MapStr, error) {
 
 	event := common.MapStr{
 		"counter": m.counter,
+		"path": m.paths,
 	}
 	m.counter++
 

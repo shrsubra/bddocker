@@ -23,6 +23,7 @@ bddocker.modules:
   enabled: true
   period: 1s
   hosts: ["localhost"]
+  paths: ["/"]
 
 ----
 
