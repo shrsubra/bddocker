@@ -3,7 +3,7 @@ package fs
 import (
 	"github.com/elastic/beats/libbeat/common"
 	"github.com/elastic/beats/metricbeat/mb"
-	"fmt"
+	"syscall"
 )
 
 // init registers the MetricSet with the central registry.
@@ -22,6 +22,12 @@ type MetricSet struct {
 	mb.BaseMetricSet
 	paths []string
 	counter int
+}
+
+type DiskStatus struct {
+	All  uint64 `json:"all"`
+	Used uint64 `json:"used"`
+	Free uint64 `json:"free"`
 }
 
 // New create a new instance of the MetricSet
@@ -47,16 +53,34 @@ func New(base mb.BaseMetricSet) (mb.MetricSet, error) {
 	}, nil
 }
 
+func DiskUsage(path string) (disk DiskStatus) {
+	fs := syscall.Statfs_t{}
+	err := syscall.Statfs(path, &fs)
+	if err != nil {
+		return
+	}
+	disk.All = fs.Blocks * uint64(fs.Bsize)
+	disk.Free = fs.Bfree * uint64(fs.Bsize)
+	disk.Used = disk.All - disk.Free
+	return
+}
+
 // Fetch methods implements the data gathering and data conversion to the right format
 // It returns the event which is then forward to the output. In case of an error, a
 // descriptive error must be returned.
-func (m *MetricSet) Fetch() (common.MapStr, error) {
+func (m *MetricSet) Fetch() ([]common.MapStr, error) {
 
-	event := common.MapStr{
-		"counter": m.counter,
-		"path": m.paths,
+	events := make([]common.MapStr, 0, len(m.paths))
+	for _, p := range m.paths {
+		ds := DiskUsage(p)
+		event := common.MapStr{
+			"path": p,
+			"all": ds.All,
+			"free": ds.Free,
+			"used": ds.Used,
+		}
+		events = append(events, event)
 	}
-	m.counter++
 
-	return event, nil
+	return events, nil
 }
